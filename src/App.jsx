@@ -2,9 +2,7 @@ import React from 'react';
 
 function App() {
   const [selectedTier, setSelectedTier] = React.useState(null);
-  const [enrollmentDiscount, setEnrollmentDiscount] = React.useState(() => {
-    return localStorage.getItem('lastDiscount') || '';
-  });
+  const [enrollmentDiscount, setEnrollmentDiscount] = React.useState('');
   const [daysLeft, setDaysLeft] = React.useState(0);
   const [darkMode, setDarkMode] = React.useState(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -34,10 +32,15 @@ function App() {
     { name: 'Combined 12-Month Plan', totalPrice: 2299, program: 'combined', type: 'prepaid', months: 12 },
   ];
 
-  // Save discount when it changes
+  // Load saved discount only when selecting a monthly plan with enrollment fee
   React.useEffect(() => {
-    localStorage.setItem('lastDiscount', enrollmentDiscount);
-  }, [enrollmentDiscount]);
+    if (selectedTier?.type === 'monthly' && selectedTier?.enrollmentFee > 0) {
+      const savedDiscount = localStorage.getItem('lastDiscount');
+      if (savedDiscount) {
+        setEnrollmentDiscount(savedDiscount);
+      }
+    }
+  }, [selectedTier]);
 
   // Listen for system dark mode changes
   React.useEffect(() => {
@@ -105,7 +108,8 @@ function App() {
         customerPays: tier.totalPrice,
         actualCharge: actualCharge,
         ccFee: ccFee,
-        effectiveMonthly: tier.totalPrice / tier.months
+        effectiveMonthly: tier.totalPrice / tier.months,
+        totalCharge: tier.totalPrice
       };
     }
 
@@ -151,7 +155,14 @@ function App() {
             <label className="block text-sm font-medium mb-2">Select Plan Tier</label>
             <select 
               className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
-              onChange={(e) => setSelectedTier(tiers[parseInt(e.target.value)])}
+              onChange={(e) => {
+                const newTier = e.target.value === "" ? null : tiers[parseInt(e.target.value)];
+                setSelectedTier(newTier);
+                if (!newTier || newTier.type === 'prepaid') {
+                  setEnrollmentDiscount('');
+                }
+              }}
+              value={selectedTier && tiers.indexOf(selectedTier) !== -1 ? tiers.indexOf(selectedTier) : ""}
               style={{WebkitAppearance: 'none'}}
             >
               <option value="">Choose a plan</option>
@@ -185,52 +196,53 @@ function App() {
             </select>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Enrollment Fee Discount ($)</label>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              max={selectedTier?.enrollmentFee || 399}
-              value={enrollmentDiscount}
-              onChange={handleDiscountChange}
-              className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
-              placeholder="Enter discount amount"
-            />
-          </div>
+          {/* Only show enrollment discount input for monthly plans with enrollment fee */}
+          {selectedTier?.type === 'monthly' && selectedTier?.enrollmentFee > 0 && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">Enrollment Fee Discount ($)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                max={selectedTier.enrollmentFee}
+                value={enrollmentDiscount}
+                onChange={handleDiscountChange}
+                className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+                placeholder="Enter discount amount"
+              />
+            </div>
+          )}
 
           {selectedTier && (
             <div className={`mt-6 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
               <h3 className="font-semibold text-lg mb-4">Price Breakdown</h3>
               <div className="space-y-2 text-sm">
-                {getBreakdown(selectedTier)?.isPrepaid ? (
+                {selectedTier.type === 'prepaid' ? (
                   // Prepaid plan breakdown
-                  <>
-                    <div className={`pb-4 border-b ${borderColor}`}>
-                      <div className="font-medium pb-2">{selectedTier.months}-Month Prepaid Plan:</div>
-                      <div className="flex justify-between">
-                        <span>Total Price:</span>
-                        <span>${formatPrice(selectedTier.totalPrice)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Effective Monthly Rate:</span>
-                        <span>${formatPrice(getBreakdown(selectedTier)?.effectiveMonthly)}/month</span>
-                      </div>
-                      <div className={`flex justify-between ${mutedText}`}>
-                        <span>CC Processing Fee (We Cover):</span>
-                        <span>-${formatPrice(getBreakdown(selectedTier)?.ccFee)}</span>
-                      </div>
-                      <div className="flex justify-between font-medium pt-2">
-                        <span>Total Amount Customer Pays:</span>
-                        <span>${formatPrice(selectedTier.totalPrice)}</span>
-                      </div>
+                  <div className="pb-4">
+                    <div className="font-medium pb-2">{selectedTier.months}-Month Prepaid Plan:</div>
+                    <div className="flex justify-between">
+                      <span>Total Price:</span>
+                      <span>${formatPrice(selectedTier.totalPrice)}</span>
                     </div>
-                  </>
+                    <div className="flex justify-between">
+                      <span>Effective Monthly Rate:</span>
+                      <span>${formatPrice(getBreakdown(selectedTier)?.effectiveMonthly)}/month</span>
+                    </div>
+                    <div className={`flex justify-between ${mutedText}`}>
+                      <span>CC Processing Fee (We Cover):</span>
+                      <span>-${formatPrice(getBreakdown(selectedTier)?.ccFee)}</span>
+                    </div>
+                    <div className={`flex justify-between font-semibold text-lg pt-4`}>
+                      <span>Total Amount Customer Pays:</span>
+                      <span>${formatPrice(selectedTier.totalPrice)}</span>
+                    </div>
+                  </div>
                 ) : (
-                  // Existing monthly plan breakdown
+                  // Monthly plan breakdown
                   <>
                     {/* Membership Section */}
-                    <div className={`pb-4 border-b ${borderColor}`}>
+                    <div className={`pb-4 ${selectedTier.type === 'monthly' ? `border-b ${borderColor}` : ''}`}>
                       <div className="font-medium pb-2">Membership Charges:</div>
                       <div className="flex justify-between">
                         <span>Monthly Price:</span>
@@ -263,38 +275,40 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Enrollment Section */}
-                    <div className="pt-4">
-                      <div className="font-medium pb-2">Enrollment Fee:</div>
-                      <div className="flex justify-between">
-                        <span>Original Enrollment Fee:</span>
-                        <span>${formatPrice(selectedTier.enrollmentFee)}</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span>Enrollment Fee Discount:</span>
-                        <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span>Final Enrollment Fee:</span>
-                        <span>${formatPrice(getBreakdown(selectedTier)?.finalEnrollmentFee)}</span>
-                      </div>
+                    {/* Enrollment Section - Only show for monthly plans */}
+                    {selectedTier.type === 'monthly' && (
+                      <div className="pt-4">
+                        <div className="font-medium pb-2">Enrollment Fee:</div>
+                        <div className="flex justify-between">
+                          <span>Original Enrollment Fee:</span>
+                          <span>${formatPrice(selectedTier.enrollmentFee)}</span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span>Enrollment Fee Discount:</span>
+                          <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span>Final Enrollment Fee:</span>
+                          <span>${formatPrice(getBreakdown(selectedTier)?.finalEnrollmentFee)}</span>
+                        </div>
 
-                      {selectedTier.hasCCDiscount && (
-                        <>
-                          <div className={`flex justify-between ${mutedText}`}>
-                            <span>Amount to be Charged:</span>
-                            <span>${formatPrice(getBreakdown(selectedTier)?.enrollmentChargeAmount)}</span>
-                          </div>
-                          
-                          <div className={`flex justify-between ${mutedText}`}>
-                            <span>CC Processing Fee (3.99%):</span>
-                            <span>-${formatPrice(getBreakdown(selectedTier)?.enrollmentCCFee)}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                        {selectedTier.hasCCDiscount && (
+                          <>
+                            <div className={`flex justify-between ${mutedText}`}>
+                              <span>Amount to be Charged:</span>
+                              <span>${formatPrice(getBreakdown(selectedTier)?.enrollmentChargeAmount)}</span>
+                            </div>
+                            
+                            <div className={`flex justify-between ${mutedText}`}>
+                              <span>CC Processing Fee (3.99%):</span>
+                              <span>-${formatPrice(getBreakdown(selectedTier)?.enrollmentCCFee)}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                     
                     <div className={`flex justify-between font-semibold text-lg pt-4 border-t ${borderColor} mt-4`}>
                       <span>Total Amount Customer Pays:</span>
