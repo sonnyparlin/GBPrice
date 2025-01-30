@@ -21,7 +21,7 @@ function App() {
     // Kickboxing Tiers
     { name: 'Kickboxing Basic', monthlyPrice: 130, enrollmentFee: 399, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
     { name: 'Kickboxing Standard', monthlyPrice: 165, enrollmentFee: 299, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
-    { name: 'Kickboxing Premium', monthlyPrice: 199, enrollmentFee: 0, hasCCDiscount: false, program: 'kickboxing', type: 'monthly' },
+    { name: 'Kickboxing Premium', monthlyPrice: 200, enrollmentFee: 0, hasCCDiscount: false, program: 'kickboxing', type: 'monthly' },
     { name: 'Kickboxing 6-Month Plan', totalPrice: 900, program: 'kickboxing', type: 'prepaid', months: 6 },
     { name: 'Kickboxing 12-Month Plan', totalPrice: 1500, program: 'kickboxing', type: 'prepaid', months: 12 },
     // Combined Program Tiers
