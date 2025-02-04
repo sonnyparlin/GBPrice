@@ -146,7 +146,6 @@ function App() {
     }
 
     const adjustedMonthlyPrice = getAdjustedMonthlyPrice(tier);
-    // For family plans, don't multiply by number of people since it's a total price
     const isFamilyPlan = numberOfPeople >= 3 && (tier.program === 'jiujitsu' || tier.program === 'combined');
     const proratedAmount = calculateProratedAmount(adjustedMonthlyPrice) * (isFamilyPlan ? 1 : numberOfPeople);
     const finalEnrollmentFee = getDiscountedEnrollmentFee(tier);
@@ -154,8 +153,9 @@ function App() {
     const membershipCCFee = calculateMembershipCCFee(proratedAmount);
     const totalMembershipCharge = proratedAmount + membershipCCFee;
 
-    const enrollmentChargeAmount = calculateEnrollmentChargeAmount(finalEnrollmentFee, tier.hasCCDiscount);
-    const enrollmentCCFee = enrollmentChargeAmount * CC_PERCENTAGE;
+    // Calculate the enrollment charge amount as original fee minus CC fee
+    const enrollmentChargeAmount = finalEnrollmentFee - (finalEnrollmentFee * CC_PERCENTAGE);
+    const enrollmentCCFee = finalEnrollmentFee * CC_PERCENTAGE;
 
     return {
       isPrepaid: false,
@@ -163,9 +163,9 @@ function App() {
       membershipCCFee,
       totalMembershipCharge,
       finalEnrollmentFee,
-      enrollmentChargeAmount: tier.hasCCDiscount ? enrollmentChargeAmount : finalEnrollmentFee,
+      enrollmentChargeAmount,
       enrollmentCCFee,
-      totalCharge: totalMembershipCharge + (tier.hasCCDiscount ? finalEnrollmentFee : enrollmentChargeAmount),
+      totalCharge: totalMembershipCharge + enrollmentChargeAmount,
       adjustedMonthlyPrice,
       numberOfPeople,
       isFamilyPlan
@@ -185,14 +185,32 @@ function App() {
   const renderPeopleInput = () => (
     <div className="mb-6">
       <label className="block text-sm font-medium mb-2">Number of People</label>
-      <input
-        type="number"
-        min="1"
-        value={numberOfPeople}
-        onChange={(e) => setNumberOfPeople(Math.max(1, parseInt(e.target.value) || 1))}
-        className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
-        placeholder="Enter number of people"
-      />
+      <div className="flex items-center">
+        <button
+          onClick={() => setNumberOfPeople(prev => Math.max(1, prev - 1))}
+          className={`px-4 py-3 border rounded-l-lg ${borderColor} ${cardBg} hover:bg-gray-100 dark:hover:bg-gray-700`}
+          type="button"
+        >
+          -
+        </button>
+        <input
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          min="1"
+          value={numberOfPeople}
+          onChange={(e) => setNumberOfPeople(Math.max(1, parseInt(e.target.value) || 1))}
+          className={`w-20 p-3 border-y text-center ${borderColor} ${cardBg} ${textColor}`}
+          style={{ appearance: 'textfield' }}
+        />
+        <button
+          onClick={() => setNumberOfPeople(prev => prev + 1)}
+          className={`px-4 py-3 border rounded-r-lg ${borderColor} ${cardBg} hover:bg-gray-100 dark:hover:bg-gray-700`}
+          type="button"
+        >
+          +
+        </button>
+      </div>
     </div>
   );
 
@@ -243,39 +261,44 @@ function App() {
     );
   };
 
-  const renderEnrollmentSection = (tier) => (
-    <div className="pt-4">
-      <div className="font-medium pb-2">Enrollment Fee:</div>
-      <div className="flex justify-between">
-        <span>Original Enrollment Fee {numberOfPeople >= 3 ? '(Family Plan)' : ''}:</span>
-        <span>${formatPrice(numberOfPeople >= 3 ? 99 : tier.enrollmentFee)}</span>
-      </div>
-      
-      <div className="flex justify-between">
-        <span>Enrollment Fee Discount:</span>
-        <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
-      </div>
-      
-      <div className="flex justify-between">
-        <span>Final Enrollment Fee:</span>
-        <span>${formatPrice(getBreakdown(tier)?.finalEnrollmentFee)}</span>
-      </div>
+  const renderEnrollmentSection = (tier) => {
+    const breakdown = getBreakdown(tier);
+    const originalEnrollmentFee = numberOfPeople >= 3 ? 99 : tier.enrollmentFee;
 
-      {tier.hasCCDiscount && (
-        <>
-          <div className={`flex justify-between ${mutedText}`}>
-            <span>Amount to be Charged:</span>
-            <span>${formatPrice(getBreakdown(tier)?.enrollmentChargeAmount)}</span>
-          </div>
-          
-          <div className={`flex justify-between ${mutedText}`}>
-            <span>CC Processing Fee (3.99%):</span>
-            <span>-${formatPrice(getBreakdown(tier)?.enrollmentCCFee)}</span>
-          </div>
-        </>
-      )}
-    </div>
-  );
+    return (
+      <div className="pt-4">
+        <div className="font-medium pb-2">Enrollment Fee:</div>
+        <div className="flex justify-between">
+          <span>Original Enrollment Fee {numberOfPeople >= 3 ? '(Family Plan)' : ''}:</span>
+          <span>${formatPrice(originalEnrollmentFee)}</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span>Enrollment Fee Discount:</span>
+          <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span>Final Enrollment Fee:</span>
+          <span>${formatPrice(breakdown?.finalEnrollmentFee)}</span>
+        </div>
+
+        {tier.hasCCDiscount && (
+          <>
+            <div className={`flex justify-between ${mutedText}`}>
+              <span>CC Processing Fee (3.99%):</span>
+              <span>-${formatPrice(breakdown?.enrollmentCCFee)}</span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-emerald-500 font-medium">Amount We Charge (to cover cc fee):</span>
+              <span className="text-emerald-500 font-medium">${formatPrice(breakdown?.enrollmentChargeAmount)}</span>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={`min-h-screen ${bgColor} py-8 ${textColor}`}>
