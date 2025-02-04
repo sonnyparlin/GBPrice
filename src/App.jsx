@@ -4,12 +4,13 @@ function App() {
   const [selectedTier, setSelectedTier] = React.useState(null);
   const [enrollmentDiscount, setEnrollmentDiscount] = React.useState('');
   const [daysLeft, setDaysLeft] = React.useState(0);
+  const [totalDaysInMonth, setTotalDaysInMonth] = React.useState(0);
+  const [numberOfPeople, setNumberOfPeople] = React.useState(1);
   const [darkMode, setDarkMode] = React.useState(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   const CC_PERCENTAGE = 0.0399;
-  const STANDARD_MONTH_DAYS = 30;
 
   const tiers = [
     // Jiu Jitsu Tiers
@@ -55,11 +56,12 @@ function App() {
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const remainingDays = lastDayOfMonth.getDate() - today.getDate() + 1;
     setDaysLeft(remainingDays);
+    setTotalDaysInMonth(lastDayOfMonth.getDate());
   }, []);
 
   const calculateProratedAmount = (monthlyPrice) => {
     if (!monthlyPrice) return 0;
-    const dailyRate = Number((monthlyPrice / STANDARD_MONTH_DAYS).toFixed(10));
+    const dailyRate = Number((monthlyPrice / totalDaysInMonth).toFixed(10));
     const proratedAmount = dailyRate * daysLeft;
     return proratedAmount;
   };
@@ -73,6 +75,15 @@ function App() {
 
   const getDiscountedEnrollmentFee = (tier) => {
     if (!tier) return 0;
+    
+    // Check if it's a family plan (3 or more people)
+    if (numberOfPeople >= 3) {
+      const familyEnrollmentFee = 99;
+      const discountAmount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
+      return Math.max(0, familyEnrollmentFee - discountAmount);
+    }
+
+    // Regular enrollment fee logic
     const discountAmount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
     return Math.max(0, tier.enrollmentFee - discountAmount);
   };
@@ -86,9 +97,30 @@ function App() {
     return amount * CC_PERCENTAGE;
   };
 
+  const getAdjustedMonthlyPrice = (tier) => {
+    if (!tier || tier.type === 'prepaid') return tier?.monthlyPrice || 0;
+    
+    // For 3 or more people (Family Plan)
+    if (numberOfPeople >= 3) {
+      if (tier.program === 'jiujitsu') {
+        return 400;  // Jiu Jitsu Family Plan
+      } else if (tier.program === 'combined') {
+        return 470;  // Combined Family Plan
+      } else if (tier.program === 'kickboxing') {
+        return tier.monthlyPrice;  // Regular price for kickboxing
+      }
+    }
+    
+    return tier.monthlyPrice;
+  };
+
   const formatOptionLabel = (tier) => {
     if (tier.type === 'monthly') {
-      return `${tier.name} - $${tier.monthlyPrice}/month`;
+      const price = numberOfPeople >= 3 ? getAdjustedMonthlyPrice(tier) : tier.monthlyPrice;
+      const label = numberOfPeople >= 3 && (tier.program === 'jiujitsu' || tier.program === 'combined') 
+        ? `${tier.name} (Family Plan)` 
+        : tier.name;
+      return `${label} - $${price}/month`;
     } else {
       const actualCharge = tier.totalPrice / (1 - CC_PERCENTAGE);
       const ccFee = actualCharge - tier.totalPrice;
@@ -113,8 +145,10 @@ function App() {
       };
     }
 
-    // Original monthly calculation logic
-    const proratedAmount = calculateProratedAmount(tier.monthlyPrice);
+    const adjustedMonthlyPrice = getAdjustedMonthlyPrice(tier);
+    // For family plans, don't multiply by number of people since it's a total price
+    const isFamilyPlan = numberOfPeople >= 3 && (tier.program === 'jiujitsu' || tier.program === 'combined');
+    const proratedAmount = calculateProratedAmount(adjustedMonthlyPrice) * (isFamilyPlan ? 1 : numberOfPeople);
     const finalEnrollmentFee = getDiscountedEnrollmentFee(tier);
     
     const membershipCCFee = calculateMembershipCCFee(proratedAmount);
@@ -131,7 +165,10 @@ function App() {
       finalEnrollmentFee,
       enrollmentChargeAmount: tier.hasCCDiscount ? enrollmentChargeAmount : finalEnrollmentFee,
       enrollmentCCFee,
-      totalCharge: totalMembershipCharge + (tier.hasCCDiscount ? finalEnrollmentFee : enrollmentChargeAmount)
+      totalCharge: totalMembershipCharge + (tier.hasCCDiscount ? finalEnrollmentFee : enrollmentChargeAmount),
+      adjustedMonthlyPrice,
+      numberOfPeople,
+      isFamilyPlan
     };
   };
 
@@ -144,6 +181,101 @@ function App() {
   const textColor = darkMode ? 'text-white' : 'text-gray-900';
   const mutedText = darkMode ? 'text-gray-400' : 'text-gray-600';
   const borderColor = darkMode ? 'border-gray-700' : 'border-gray-200';
+
+  const renderPeopleInput = () => (
+    <div className="mb-6">
+      <label className="block text-sm font-medium mb-2">Number of People</label>
+      <input
+        type="number"
+        min="1"
+        value={numberOfPeople}
+        onChange={(e) => setNumberOfPeople(Math.max(1, parseInt(e.target.value) || 1))}
+        className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+        placeholder="Enter number of people"
+      />
+    </div>
+  );
+
+  const renderMonthlyBreakdown = () => {
+    const breakdown = getBreakdown(selectedTier);
+    const isFamilyPlan = numberOfPeople >= 3 && (selectedTier.program === 'jiujitsu' || selectedTier.program === 'combined');
+    
+    return (
+      <div className={`pb-4 ${selectedTier.type === 'monthly' ? `border-b ${borderColor}` : ''}`}>
+        <div className="font-medium pb-2">Membership Charges:</div>
+        <div className="flex justify-between">
+          <span>Monthly Price {isFamilyPlan ? '(Family Plan Total)' : 'per Person'}:</span>
+          <span>${formatPrice(breakdown?.adjustedMonthlyPrice)}</span>
+        </div>
+        
+        {!isFamilyPlan && (
+          <div className="flex justify-between">
+            <span>Number of People:</span>
+            <span>x{numberOfPeople}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between">
+          <span>Daily Rate (based on {totalDaysInMonth}-day month):</span>
+          <span>${formatPrice(breakdown?.adjustedMonthlyPrice / totalDaysInMonth)}/day</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span>Days Left in Month:</span>
+          <span>{daysLeft} days</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span>Prorated Amount {isFamilyPlan ? '(Family Total)' : '(Total for All People)'}:</span>
+          <span>${formatPrice(breakdown?.proratedAmount)}</span>
+        </div>
+
+        <div className={`flex justify-between ${mutedText}`}>
+          <span>CC Processing Fee (3.99%):</span>
+          <span>+${formatPrice(breakdown?.membershipCCFee)}</span>
+        </div>
+
+        <div className="flex justify-between font-medium pt-2">
+          <span>Total Membership Charge:</span>
+          <span>${formatPrice(breakdown?.totalMembershipCharge)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEnrollmentSection = (tier) => (
+    <div className="pt-4">
+      <div className="font-medium pb-2">Enrollment Fee:</div>
+      <div className="flex justify-between">
+        <span>Original Enrollment Fee {numberOfPeople >= 3 ? '(Family Plan)' : ''}:</span>
+        <span>${formatPrice(numberOfPeople >= 3 ? 99 : tier.enrollmentFee)}</span>
+      </div>
+      
+      <div className="flex justify-between">
+        <span>Enrollment Fee Discount:</span>
+        <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
+      </div>
+      
+      <div className="flex justify-between">
+        <span>Final Enrollment Fee:</span>
+        <span>${formatPrice(getBreakdown(tier)?.finalEnrollmentFee)}</span>
+      </div>
+
+      {tier.hasCCDiscount && (
+        <>
+          <div className={`flex justify-between ${mutedText}`}>
+            <span>Amount to be Charged:</span>
+            <span>${formatPrice(getBreakdown(tier)?.enrollmentChargeAmount)}</span>
+          </div>
+          
+          <div className={`flex justify-between ${mutedText}`}>
+            <span>CC Processing Fee (3.99%):</span>
+            <span>-${formatPrice(getBreakdown(tier)?.enrollmentCCFee)}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className={`min-h-screen ${bgColor} py-8 ${textColor}`}>
@@ -196,6 +328,8 @@ function App() {
             </select>
           </div>
 
+          {selectedTier && renderPeopleInput()}
+
           {/* Only show enrollment discount input for monthly plans with enrollment fee */}
           {selectedTier?.type === 'monthly' && selectedTier?.enrollmentFee > 0 && (
             <div className="mb-6">
@@ -241,74 +375,10 @@ function App() {
                 ) : (
                   // Monthly plan breakdown
                   <>
-                    {/* Membership Section */}
-                    <div className={`pb-4 ${selectedTier.type === 'monthly' ? `border-b ${borderColor}` : ''}`}>
-                      <div className="font-medium pb-2">Membership Charges:</div>
-                      <div className="flex justify-between">
-                        <span>Monthly Price:</span>
-                        <span>${formatPrice(selectedTier.monthlyPrice)}</span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span>Daily Rate (based on 30-day month):</span>
-                        <span>${formatPrice(selectedTier.monthlyPrice / STANDARD_MONTH_DAYS)}/day</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span>Days Left in Month:</span>
-                        <span>{daysLeft} days</span>
-                      </div>
-                      
-                      <div className="flex justify-between">
-                        <span>Prorated Amount:</span>
-                        <span>${formatPrice(getBreakdown(selectedTier)?.proratedAmount)}</span>
-                      </div>
-
-                      <div className={`flex justify-between ${mutedText}`}>
-                        <span>CC Processing Fee (3.99%):</span>
-                        <span>+${formatPrice(getBreakdown(selectedTier)?.membershipCCFee)}</span>
-                      </div>
-
-                      <div className="flex justify-between font-medium pt-2">
-                        <span>Total Membership Charge:</span>
-                        <span>${formatPrice(getBreakdown(selectedTier)?.totalMembershipCharge)}</span>
-                      </div>
-                    </div>
-
+                    {renderMonthlyBreakdown()}
+                    
                     {/* Enrollment Section - Only show for monthly plans */}
-                    {selectedTier.type === 'monthly' && (
-                      <div className="pt-4">
-                        <div className="font-medium pb-2">Enrollment Fee:</div>
-                        <div className="flex justify-between">
-                          <span>Original Enrollment Fee:</span>
-                          <span>${formatPrice(selectedTier.enrollmentFee)}</span>
-                        </div>
-                        
-                        <div className="flex justify-between">
-                          <span>Enrollment Fee Discount:</span>
-                          <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
-                        </div>
-                        
-                        <div className="flex justify-between">
-                          <span>Final Enrollment Fee:</span>
-                          <span>${formatPrice(getBreakdown(selectedTier)?.finalEnrollmentFee)}</span>
-                        </div>
-
-                        {selectedTier.hasCCDiscount && (
-                          <>
-                            <div className={`flex justify-between ${mutedText}`}>
-                              <span>Amount to be Charged:</span>
-                              <span>${formatPrice(getBreakdown(selectedTier)?.enrollmentChargeAmount)}</span>
-                            </div>
-                            
-                            <div className={`flex justify-between ${mutedText}`}>
-                              <span>CC Processing Fee (3.99%):</span>
-                              <span>-${formatPrice(getBreakdown(selectedTier)?.enrollmentCCFee)}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
+                    {selectedTier.type === 'monthly' && renderEnrollmentSection(selectedTier)}
                     
                     <div className={`flex justify-between font-semibold text-lg pt-4 border-t ${borderColor} mt-4`}>
                       <span>Total Amount Customer Pays:</span>
