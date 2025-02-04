@@ -157,6 +157,9 @@ function App() {
     const enrollmentChargeAmount = finalEnrollmentFee - (finalEnrollmentFee * CC_PERCENTAGE);
     const enrollmentCCFee = finalEnrollmentFee * CC_PERCENTAGE;
 
+    // Calculate total charge including membership for all people
+    const monthlyTotal = isFamilyPlan ? adjustedMonthlyPrice : (adjustedMonthlyPrice * numberOfPeople);
+
     return {
       isPrepaid: false,
       proratedAmount,
@@ -166,7 +169,7 @@ function App() {
       enrollmentChargeAmount,
       enrollmentCCFee,
       totalCharge: totalMembershipCharge + enrollmentChargeAmount,
-      adjustedMonthlyPrice,
+      adjustedMonthlyPrice: monthlyTotal, // This will now be the total for all people
       numberOfPeople,
       isFamilyPlan
     };
@@ -406,6 +409,11 @@ function App() {
                     <div className={`flex justify-between font-semibold text-lg pt-4 border-t ${borderColor} mt-4`}>
                       <span>Total Amount Customer Pays:</span>
                       <span>${formatPrice(getBreakdown(selectedTier)?.totalCharge)}</span>
+                    </div>
+                    {/* Add monthly payment line */}
+                    <div className={`flex justify-between text-sm ${mutedText} pt-1`}>
+                      <span>Then:</span>
+                      <span>${formatPrice(getBreakdown(selectedTier)?.adjustedMonthlyPrice)}/mo</span>
                     </div>
                   </>
                 )}
