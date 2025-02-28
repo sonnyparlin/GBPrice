@@ -9,6 +9,10 @@ function App() {
   const [darkMode, setDarkMode] = React.useState(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
+  const [percentageDiscount, setPercentageDiscount] = React.useState('');
+  const [discountTarget, setDiscountTarget] = React.useState('membership');
+  const [showMilitaryDiscount, setShowMilitaryDiscount] = React.useState(false);
+  const [showEnrollmentDiscount, setShowEnrollmentDiscount] = React.useState(false);
 
   const CC_PERCENTAGE = 0.0399;
 
@@ -73,19 +77,19 @@ function App() {
     }
   };
 
+  const calculatePercentageDiscount = (amount, target) => {
+    if (!percentageDiscount || discountTarget !== target) return 0;
+    return (Number(percentageDiscount) / 100) * amount;
+  };
+
   const getDiscountedEnrollmentFee = (tier) => {
     if (!tier) return 0;
     
-    // Check if it's a family plan (3 or more people)
-    if (numberOfPeople >= 3) {
-      const familyEnrollmentFee = 99;
-      const discountAmount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
-      return Math.max(0, familyEnrollmentFee - discountAmount);
-    }
-
-    // Regular enrollment fee logic
-    const discountAmount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
-    return Math.max(0, tier.enrollmentFee - discountAmount);
+    const originalFee = numberOfPeople >= 3 ? 99 : tier.enrollmentFee;
+    const flatDiscount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
+    const percentDiscount = calculatePercentageDiscount(originalFee, 'enrollment');
+    
+    return Math.max(0, originalFee - flatDiscount - percentDiscount);
   };
 
   const calculateEnrollmentChargeAmount = (enrollmentAmount, hasCCDiscount) => {
@@ -147,18 +151,20 @@ function App() {
 
     const adjustedMonthlyPrice = getAdjustedMonthlyPrice(tier);
     const isFamilyPlan = numberOfPeople >= 3 && (tier.program === 'jiujitsu' || tier.program === 'combined');
-    const proratedAmount = calculateProratedAmount(adjustedMonthlyPrice) * (isFamilyPlan ? 1 : numberOfPeople);
+    const baseAmount = adjustedMonthlyPrice * (isFamilyPlan ? 1 : numberOfPeople);
+    const membershipDiscount = calculatePercentageDiscount(baseAmount, 'membership');
+    const discountedAmount = baseAmount - membershipDiscount;
+    
+    const proratedAmount = calculateProratedAmount(discountedAmount);
     const finalEnrollmentFee = getDiscountedEnrollmentFee(tier);
     
     const membershipCCFee = calculateMembershipCCFee(proratedAmount);
     const totalMembershipCharge = proratedAmount + membershipCCFee;
 
-    // Calculate the enrollment charge amount as original fee minus CC fee
     const enrollmentChargeAmount = finalEnrollmentFee - (finalEnrollmentFee * CC_PERCENTAGE);
     const enrollmentCCFee = finalEnrollmentFee * CC_PERCENTAGE;
 
-    // Calculate total charge including membership for all people
-    const monthlyTotal = isFamilyPlan ? adjustedMonthlyPrice : (adjustedMonthlyPrice * numberOfPeople);
+    const monthlyTotal = discountedAmount;
 
     return {
       isPrepaid: false,
@@ -169,9 +175,12 @@ function App() {
       enrollmentChargeAmount,
       enrollmentCCFee,
       totalCharge: totalMembershipCharge + enrollmentChargeAmount,
-      adjustedMonthlyPrice: monthlyTotal, // This will now be the total for all people
+      adjustedMonthlyPrice: monthlyTotal,
       numberOfPeople,
-      isFamilyPlan
+      isFamilyPlan,
+      membershipDiscount,
+      baseAmount,
+      discountedAmount
     };
   };
 
@@ -217,6 +226,91 @@ function App() {
     </div>
   );
 
+  const renderEnrollmentDiscountCheckbox = () => (
+    <div className="mb-6">
+      <label className="flex items-center">
+        <input
+          type="checkbox"
+          checked={showEnrollmentDiscount}
+          onChange={(e) => {
+            setShowEnrollmentDiscount(e.target.checked);
+            if (!e.target.checked) {
+              setEnrollmentDiscount('');
+            }
+          }}
+          className="mr-2"
+        />
+        <span className="text-sm font-medium">Add Enrollment Fee Discount</span>
+      </label>
+    </div>
+  );
+
+  const renderMilitaryDiscountCheckbox = () => (
+    <div className="mb-6">
+      <label className="flex items-center">
+        <input
+          type="checkbox"
+          checked={showMilitaryDiscount}
+          onChange={(e) => {
+            setShowMilitaryDiscount(e.target.checked);
+            if (e.target.checked) {
+              setPercentageDiscount('20');  // Set to 20% when checked
+              setDiscountTarget('enrollment');  // Default to enrollment fee
+            } else {
+              setPercentageDiscount('');
+              setDiscountTarget('enrollment');
+            }
+          }}
+          className="mr-2"
+        />
+        <span className="text-sm font-medium">Add Military Discount</span>
+      </label>
+    </div>
+  );
+
+  const renderPercentageDiscountInput = () => (
+    <div className="mb-6">
+      <label className="block text-sm font-medium mb-2">Military Discount Percentage</label>
+      <div className="space-y-2">
+        <div className="flex items-center space-x-4">
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            max="100"
+            value={percentageDiscount}
+            onChange={(e) => setPercentageDiscount(e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value))))}
+            className={`w-24 p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+            placeholder="20"
+          />
+          <span>%</span>
+        </div>
+        <div className="flex space-x-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="enrollment"
+              checked={discountTarget === 'enrollment'}
+              onChange={(e) => setDiscountTarget(e.target.value)}
+              className="mr-2"
+            />
+            Apply to Enrollment Fee
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="membership"
+              checked={discountTarget === 'membership'}
+              onChange={(e) => setDiscountTarget(e.target.value)}
+              className="mr-2"
+            />
+            Apply to Membership Fee
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderMonthlyBreakdown = () => {
     const breakdown = getBreakdown(selectedTier);
     const isFamilyPlan = numberOfPeople >= 3 && (selectedTier.program === 'jiujitsu' || selectedTier.program === 'combined');
@@ -246,6 +340,13 @@ function App() {
           <span>{daysLeft} days</span>
         </div>
         
+        {discountTarget === 'membership' && percentageDiscount && (
+          <div className="flex justify-between text-red-500">
+            <span>Percentage Discount ({percentageDiscount}%):</span>
+            <span>-${formatPrice(breakdown?.membershipDiscount)}</span>
+          </div>
+        )}
+
         <div className="flex justify-between">
           <span>Prorated Amount {isFamilyPlan ? '(Family Total)' : '(Total for All People)'}:</span>
           <span>${formatPrice(breakdown?.proratedAmount)}</span>
@@ -280,6 +381,13 @@ function App() {
           <span>Enrollment Fee Discount:</span>
           <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
         </div>
+        
+        {discountTarget === 'enrollment' && percentageDiscount && (
+          <div className="flex justify-between text-red-500">
+            <span>Percentage Discount ({percentageDiscount}%):</span>
+            <span>-${formatPrice(calculatePercentageDiscount(originalEnrollmentFee, 'enrollment'))}</span>
+          </div>
+        )}
         
         <div className="flex justify-between">
           <span>Final Enrollment Fee:</span>
@@ -356,21 +464,27 @@ function App() {
 
           {selectedTier && renderPeopleInput()}
 
-          {/* Only show enrollment discount input for monthly plans with enrollment fee */}
-          {selectedTier?.type === 'monthly' && selectedTier?.enrollmentFee > 0 && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Enrollment Fee Discount ($)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                max={selectedTier.enrollmentFee}
-                value={enrollmentDiscount}
-                onChange={handleDiscountChange}
-                className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
-                placeholder="Enter discount amount"
-              />
-            </div>
+          {selectedTier?.type === 'monthly' && (
+            <>
+              {selectedTier?.enrollmentFee > 0 && renderEnrollmentDiscountCheckbox()}
+              {showEnrollmentDiscount && selectedTier?.enrollmentFee > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">Enrollment Fee Discount ($)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    max={selectedTier.enrollmentFee}
+                    value={enrollmentDiscount}
+                    onChange={handleDiscountChange}
+                    className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+                    placeholder="Enter discount amount"
+                  />
+                </div>
+              )}
+              {renderMilitaryDiscountCheckbox()}
+              {showMilitaryDiscount && renderPercentageDiscountInput()}
+            </>
           )}
 
           {selectedTier && (
