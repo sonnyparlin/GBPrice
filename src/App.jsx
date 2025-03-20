@@ -19,19 +19,19 @@ function App() {
   const tiers = [
     // Jiu Jitsu Tiers
     { name: 'Jiu Jitsu Basic', monthlyPrice: 155, enrollmentFee: 399, hasCCDiscount: true, program: 'jiujitsu', type: 'monthly' },
-    { name: 'Jiu Jitsu Standard', monthlyPrice: 185, enrollmentFee: 299, hasCCDiscount: true, program: 'jiujitsu', type: 'monthly' },
+    { name: 'Jiu Jitsu Standard', monthlyPrice: 185, enrollmentFee: 199, hasCCDiscount: true, program: 'jiujitsu', type: 'monthly' },
     { name: 'Jiu Jitsu Premium', monthlyPrice: 220, enrollmentFee: 0, hasCCDiscount: false, program: 'jiujitsu', type: 'monthly' },
     { name: 'Jiu Jitsu 6-Month Plan', totalPrice: 997, program: 'jiujitsu', type: 'prepaid', months: 6 },
     { name: 'Jiu Jitsu 12-Month Plan', totalPrice: 1797, program: 'jiujitsu', type: 'prepaid', months: 12 },
     // Kickboxing Tiers
     { name: 'Kickboxing Basic', monthlyPrice: 130, enrollmentFee: 399, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
-    { name: 'Kickboxing Standard', monthlyPrice: 165, enrollmentFee: 299, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
+    { name: 'Kickboxing Standard', monthlyPrice: 165, enrollmentFee: 199, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
     { name: 'Kickboxing Premium', monthlyPrice: 200, enrollmentFee: 0, hasCCDiscount: false, program: 'kickboxing', type: 'monthly' },
     { name: 'Kickboxing 6-Month Plan', totalPrice: 900, program: 'kickboxing', type: 'prepaid', months: 6 },
     { name: 'Kickboxing 12-Month Plan', totalPrice: 1500, program: 'kickboxing', type: 'prepaid', months: 12 },
     // Combined Program Tiers
     { name: 'Combined Basic', monthlyPrice: 200, enrollmentFee: 399, hasCCDiscount: true, program: 'combined', type: 'monthly' },
-    { name: 'Combined Standard', monthlyPrice: 220, enrollmentFee: 299, hasCCDiscount: true, program: 'combined', type: 'monthly' },
+    { name: 'Combined Standard', monthlyPrice: 220, enrollmentFee: 199, hasCCDiscount: true, program: 'combined', type: 'monthly' },
     { name: 'Combined Premium', monthlyPrice: 245, enrollmentFee: 0, hasCCDiscount: false, program: 'combined', type: 'monthly' },
     { name: 'Combined 6-Month Plan', totalPrice: 1399, program: 'combined', type: 'prepaid', months: 6 },
     { name: 'Combined 12-Month Plan', totalPrice: 2299, program: 'combined', type: 'prepaid', months: 12 },
