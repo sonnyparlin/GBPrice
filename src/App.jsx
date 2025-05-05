@@ -393,11 +393,14 @@ function App() {
 
         {tier.hasCCDiscount && (
           <>
+            <div className="flex justify-between">
+              <span>Net Enrollment Fee (before processing):</span>
+              <span>${formatPrice(breakdown?.finalEnrollmentFee)}</span>
+            </div>
             <div className={`flex justify-between ${mutedText}`}>
               <span>CC Processing Fee (3.99%):</span>
               <span>-${formatPrice(breakdown?.enrollmentCCFee)}</span>
             </div>
-
             <div className="flex justify-between">
               <span className="text-emerald-500 font-medium">Amount We Charge (to cover cc fee):</span>
               <span className="text-emerald-500 font-medium">${formatPrice(breakdown?.enrollmentChargeAmount)}</span>
@@ -493,20 +496,16 @@ function App() {
                   <div className="pb-4">
                     <div className="font-medium pb-2">{selectedTier.months}-Month Prepaid Plan:</div>
                     <div className="flex justify-between">
-                      <span>Total Price:</span>
+                      <span>Program Price (before processing fee):</span>
                       <span>${formatPrice(selectedTier.totalPrice)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Effective Monthly Rate:</span>
-                      <span>${formatPrice(getBreakdown(selectedTier)?.effectiveMonthly)}/month</span>
-                    </div>
-                    <div className={`flex justify-between ${mutedText}`}>
-                      <span>CC Processing Fee (We Cover):</span>
+                      <span>Processing Fee (We Cover):</span>
                       <span>-${formatPrice(getBreakdown(selectedTier)?.ccFee)}</span>
                     </div>
-                    <div className={`flex justify-between font-semibold text-lg pt-4`}>
+                    <div className="flex justify-between font-semibold text-lg pt-4">
                       <span>Total Amount Customer Pays:</span>
-                      <span>${formatPrice(selectedTier.totalPrice)}</span>
+                      <span>${formatPrice(selectedTier.totalPrice - getBreakdown(selectedTier)?.ccFee)}</span>
                     </div>
                   </div>
                 ) : (
