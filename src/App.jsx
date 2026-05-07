@@ -186,22 +186,26 @@ function App() {
     return Number(amount).toFixed(2);
   };
 
-  const bgColor = darkMode ? 'bg-gray-900' : 'bg-gray-100';
-  const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
-  const textColor = darkMode ? 'text-white' : 'text-gray-900';
-  const mutedText = darkMode ? 'text-gray-400' : 'text-gray-600';
-  const borderColor = darkMode ? 'border-gray-700' : 'border-gray-200';
+  const bgColor = darkMode ? 'bg-black' : 'bg-neutral-100';
+  const cardBg = darkMode ? 'bg-neutral-950' : 'bg-white';
+  const inputBg = darkMode ? 'bg-black' : 'bg-white';
+  const textColor = darkMode ? 'text-white' : 'text-black';
+  const mutedText = darkMode ? 'text-neutral-400' : 'text-neutral-500';
+  const borderColor = darkMode ? 'border-white' : 'border-black';
+  const subtleBorder = darkMode ? 'border-neutral-800' : 'border-neutral-200';
+  const labelClass = `block text-[11px] font-bold uppercase tracking-[0.15em] mb-2 ${mutedText}`;
+  const inputClass = `w-full p-3 border-2 ${borderColor} ${inputBg} ${textColor} font-medium focus:outline-none focus:ring-2 focus:ring-gracie-red`;
 
   const renderPeopleInput = () => (
     <div className="mb-6">
-      <label className="block text-sm font-medium mb-2">Number of People</label>
+      <label className={labelClass}>Number of People</label>
       <div className="flex items-center">
         <button
           onClick={() => setNumberOfPeople(prev => Math.max(1, prev - 1))}
-          className={`px-4 py-3 border rounded-l-lg ${borderColor} ${cardBg} hover:bg-gray-100 dark:hover:bg-gray-700`}
+          className={`px-5 py-3 border-2 ${borderColor} ${inputBg} ${textColor} font-black text-lg hover:bg-gracie-red hover:text-white hover:border-gracie-red transition-colors`}
           type="button"
         >
-          -
+          −
         </button>
         <input
           type="number"
@@ -210,12 +214,12 @@ function App() {
           min="1"
           value={numberOfPeople}
           onChange={(e) => setNumberOfPeople(Math.max(1, parseInt(e.target.value) || 1))}
-          className={`w-20 p-3 border-y text-center ${borderColor} ${cardBg} ${textColor}`}
+          className={`w-20 p-3 border-y-2 border-x-0 text-center font-bold ${borderColor} ${inputBg} ${textColor} focus:outline-none`}
           style={{ appearance: 'textfield' }}
         />
         <button
           onClick={() => setNumberOfPeople(prev => prev + 1)}
-          className={`px-4 py-3 border rounded-r-lg ${borderColor} ${cardBg} hover:bg-gray-100 dark:hover:bg-gray-700`}
+          className={`px-5 py-3 border-2 ${borderColor} ${inputBg} ${textColor} font-black text-lg hover:bg-gracie-red hover:text-white hover:border-gracie-red transition-colors`}
           type="button"
         >
           +
@@ -226,7 +230,7 @@ function App() {
 
   const renderEnrollmentDiscountCheckbox = () => (
     <div className="mb-6">
-      <label className="flex items-center">
+      <label className="flex items-center cursor-pointer select-none">
         <input
           type="checkbox"
           checked={showEnrollmentDiscount}
@@ -238,16 +242,16 @@ function App() {
               setEnrollmentDiscount('');
             }
           }}
-          className="mr-2"
+          className="mr-3 w-5 h-5 accent-gracie-red"
         />
-        <span className="text-sm font-medium">Add Enrollment Fee Discount</span>
+        <span className="text-xs font-bold uppercase tracking-[0.1em]">Add Enrollment Fee Discount</span>
       </label>
     </div>
   );
 
   const renderMilitaryDiscountCheckbox = () => (
     <div className="mb-6">
-      <label className="flex items-center">
+      <label className="flex items-center cursor-pointer select-none">
         <input
           type="checkbox"
           checked={showMilitaryDiscount}
@@ -255,17 +259,17 @@ function App() {
             setShowMilitaryDiscount(e.target.checked);
             setPercentageDiscount(e.target.checked ? '20' : '');
           }}
-          className="mr-2"
+          className="mr-3 w-5 h-5 accent-gracie-red"
         />
-        <span className="text-sm font-medium">Add Military Discount</span>
+        <span className="text-xs font-bold uppercase tracking-[0.1em]">Add Military Discount</span>
       </label>
     </div>
   );
 
   const renderPercentageDiscountInput = () => (
     <div className="mb-6">
-      <label className="block text-sm font-medium mb-2">Military Discount Percentage</label>
-      <div className="flex items-center space-x-4">
+      <label className={labelClass}>Military Discount Percentage</label>
+      <div className="flex items-center space-x-3">
         <input
           type="number"
           inputMode="decimal"
@@ -273,64 +277,64 @@ function App() {
           max="100"
           value={percentageDiscount}
           onChange={(e) => setPercentageDiscount(e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value))))}
-          className={`w-24 p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+          className={`w-24 p-3 border-2 ${borderColor} ${inputBg} ${textColor} font-bold text-center focus:outline-none focus:ring-2 focus:ring-gracie-red`}
           placeholder="20"
         />
-        <span>%</span>
+        <span className="font-bold text-lg">%</span>
       </div>
-      <p className={`text-xs mt-2 ${mutedText}`}>Applied to the membership fee.</p>
+      <p className={`text-[11px] uppercase tracking-widest mt-2 ${mutedText}`}>Applied to the membership fee.</p>
     </div>
   );
 
   const renderMonthlyBreakdown = () => {
     const breakdown = getBreakdown(selectedTier);
     const isFamilyPlan = numberOfPeople >= 3 && (selectedTier.program === 'jiujitsu' || selectedTier.program === 'combined' || selectedTier.program === 'kickboxing');
-    
+
     return (
-      <div className="pb-4">
-        <div className="font-medium pb-2">Membership Charges:</div>
+      <div className="pb-4 space-y-1.5">
+        <div className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedText} pb-2`}>Membership Charges</div>
         <div className="flex justify-between">
           <span>Monthly Price {isFamilyPlan ? '(Family Plan Total)' : 'per Person'}:</span>
-          <span>${formatPrice(breakdown?.adjustedMonthlyPrice)}</span>
+          <span className="font-semibold tabular-nums">${formatPrice(breakdown?.adjustedMonthlyPrice)}</span>
         </div>
-        
+
         {!isFamilyPlan && (
           <div className="flex justify-between">
             <span>Number of People:</span>
-            <span>x{numberOfPeople}</span>
+            <span className="font-semibold tabular-nums">×{numberOfPeople}</span>
           </div>
         )}
 
         <div className="flex justify-between">
-          <span>Daily Rate (based on {totalDaysInMonth}-day month):</span>
-          <span>${formatPrice(breakdown?.adjustedMonthlyPrice / totalDaysInMonth)}/day</span>
+          <span>Daily Rate ({totalDaysInMonth}-day month):</span>
+          <span className="font-semibold tabular-nums">${formatPrice(breakdown?.adjustedMonthlyPrice / totalDaysInMonth)}/day</span>
         </div>
-        
+
         <div className="flex justify-between">
           <span>Days Left in Month:</span>
-          <span>{daysLeft} days</span>
+          <span className="font-semibold tabular-nums">{daysLeft} days</span>
         </div>
-        
+
         {percentageDiscount && (
-          <div className="flex justify-between text-red-500">
+          <div className="flex justify-between text-gracie-red font-bold">
             <span>Military Discount ({percentageDiscount}%):</span>
-            <span>-${formatPrice(breakdown?.membershipDiscount)}</span>
+            <span className="tabular-nums">−${formatPrice(breakdown?.membershipDiscount)}</span>
           </div>
         )}
 
         <div className="flex justify-between">
-          <span>Prorated Amount {isFamilyPlan ? '(Family Total)' : '(Total for All People)'}:</span>
-          <span>${formatPrice(breakdown?.proratedAmount)}</span>
+          <span>Prorated Amount {isFamilyPlan ? '(Family Total)' : '(All People)'}:</span>
+          <span className="font-semibold tabular-nums">${formatPrice(breakdown?.proratedAmount)}</span>
         </div>
 
         <div className={`flex justify-between ${mutedText}`}>
           <span>CC Processing Fee (3.99%):</span>
-          <span>+${formatPrice(breakdown?.membershipCCFee)}</span>
+          <span className="tabular-nums">+${formatPrice(breakdown?.membershipCCFee)}</span>
         </div>
 
-        <div className="flex justify-between font-medium pt-2">
+        <div className="flex justify-between font-bold pt-2">
           <span>Total Membership Charge:</span>
-          <span>${formatPrice(breakdown?.totalMembershipCharge)}</span>
+          <span className="tabular-nums">${formatPrice(breakdown?.totalMembershipCharge)}</span>
         </div>
       </div>
     );
@@ -343,33 +347,37 @@ function App() {
     // Don't show enrollment section for family plans
     if (numberOfPeople >= 3) return null;
 
+    const flatDiscount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
+
     return (
-      <div className="pt-4">
-        <div className="font-medium pb-2">Enrollment Fee:</div>
+      <div className="pt-4 space-y-1.5">
+        <div className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedText} pb-2`}>Enrollment Fee</div>
         <div className="flex justify-between">
           <span>Original Enrollment Fee:</span>
-          <span>${formatPrice(originalEnrollmentFee)}</span>
+          <span className="font-semibold tabular-nums">${formatPrice(originalEnrollmentFee)}</span>
         </div>
-        
-        <div className="flex justify-between">
-          <span>Enrollment Fee Discount:</span>
-          <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
-        </div>
+
+        {flatDiscount > 0 && (
+          <div className="flex justify-between text-gracie-red font-bold">
+            <span>Enrollment Fee Discount:</span>
+            <span className="tabular-nums">−${formatPrice(flatDiscount)}</span>
+          </div>
+        )}
 
         <div className="flex justify-between">
           <span>Final Enrollment Fee:</span>
-          <span>${formatPrice(breakdown?.finalEnrollmentFee)}</span>
+          <span className="font-semibold tabular-nums">${formatPrice(breakdown?.finalEnrollmentFee)}</span>
         </div>
 
         {tier.hasCCDiscount && (
           <>
             <div className={`flex justify-between ${mutedText}`}>
               <span>CC Processing Fee (3.99%):</span>
-              <span>+${formatPrice(breakdown?.enrollmentCCFee)}</span>
+              <span className="tabular-nums">+${formatPrice(breakdown?.enrollmentCCFee)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Total Enrollment Charge:</span>
-              <span className="font-medium">${formatPrice(breakdown?.finalEnrollmentFee + breakdown?.enrollmentCCFee)}</span>
+            <div className="flex justify-between font-bold">
+              <span>Total Enrollment Charge:</span>
+              <span className="tabular-nums">${formatPrice(breakdown?.finalEnrollmentFee + breakdown?.enrollmentCCFee)}</span>
             </div>
           </>
         )}
@@ -378,15 +386,19 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen ${bgColor} py-8 ${textColor}`}>
+    <div className={`min-h-screen ${bgColor} py-8 ${textColor} font-sans`}>
       <div className="max-w-2xl mx-auto px-4">
-        <div className={`${cardBg} rounded-lg shadow-lg p-6`}>
-          <h1 className="text-2xl font-bold text-center mb-6">Pricing Calculator</h1>
-          
+        <div className={`${cardBg} border-2 ${borderColor} p-6 sm:p-8`}>
+          <div className="text-center mb-8">
+            <div className="inline-block w-12 h-1 bg-gracie-red mb-3"></div>
+            <h1 className="text-3xl font-black uppercase tracking-tight">Pricing Calculator</h1>
+            <p className={`text-[11px] font-bold uppercase tracking-[0.2em] mt-2 ${mutedText}`}>Gracie Jiu-Jitsu Bradenton</p>
+          </div>
+
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Select Plan Tier</label>
-            <select 
-              className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+            <label className={labelClass}>Select Plan Tier</label>
+            <select
+              className={inputClass}
               onChange={(e) => {
                 const newTier = e.target.value === "" ? null : TIERS[parseInt(e.target.value)];
                 setSelectedTier(newTier);
@@ -428,6 +440,17 @@ function App() {
             </select>
           </div>
 
+          {selectedTier && (
+            <div className={`mb-6 border-l-4 border-gracie-red pl-4 py-1`}>
+              <p className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedText} mb-2`}>Plan Benefits</p>
+              <ul className="space-y-1.5 text-sm font-medium">
+                <li className="flex items-center"><span className="text-gracie-red font-black mr-2">✓</span>Unlimited Classes</li>
+                <li className="flex items-center"><span className="text-gracie-red font-black mr-2">✓</span>Community App Access</li>
+                <li className="flex items-center"><span className="text-gracie-red font-black mr-2">✓</span>Easy Cancellation</li>
+              </ul>
+            </div>
+          )}
+
           {selectedTier && renderPeopleInput()}
 
           {selectedTier?.type === 'monthly' && (
@@ -435,7 +458,7 @@ function App() {
               {selectedTier?.enrollmentFee > 0 && numberOfPeople < 3 && renderEnrollmentDiscountCheckbox()}
               {showEnrollmentDiscount && selectedTier?.enrollmentFee > 0 && numberOfPeople < 3 && (
                 <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">Enrollment Fee Discount ($)</label>
+                  <label className={labelClass}>Enrollment Fee Discount ($)</label>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -443,7 +466,7 @@ function App() {
                     max={selectedTier.enrollmentFee}
                     value={enrollmentDiscount}
                     onChange={handleDiscountChange}
-                    className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+                    className={inputClass}
                     placeholder="Enter discount amount"
                   />
                 </div>
@@ -453,51 +476,56 @@ function App() {
             </>
           )}
 
-          {selectedTier && (
-            <div className={`mt-6 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
-              <h3 className="font-semibold text-lg mb-4">Price Breakdown</h3>
-              <div className="space-y-2 text-sm">
-                {selectedTier.type === 'prepaid' ? (
-                  // Prepaid plan breakdown
-                  <div className="pb-4">
-                    <div className="font-medium pb-2">{selectedTier.months}-Month Prepaid Plan:</div>
-                    <div className="flex justify-between">
-                      <span>Program Price (before processing fee):</span>
-                      <span>${formatPrice(selectedTier.totalPrice)}</span>
+          {selectedTier && (() => {
+            const breakdown = getBreakdown(selectedTier);
+            const totalToday = selectedTier.type === 'prepaid'
+              ? selectedTier.totalPrice - breakdown?.ccFee
+              : breakdown?.totalCharge;
+            const recurring = selectedTier.type === 'monthly' ? breakdown?.adjustedMonthlyPrice : null;
+            return (
+              <div className="mt-8">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-1 bg-gracie-red mr-3"></div>
+                  <h3 className="text-sm font-black uppercase tracking-[0.2em]">Price Breakdown</h3>
+                </div>
+                <div className={`border-2 ${borderColor} p-5 text-sm`}>
+                  {selectedTier.type === 'prepaid' ? (
+                    <div className="space-y-1.5">
+                      <div className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedText} pb-2`}>{selectedTier.months}-Month Prepaid Plan</div>
+                      <div className="flex justify-between">
+                        <span>Program Price (before processing fee):</span>
+                        <span className="font-semibold tabular-nums">${formatPrice(selectedTier.totalPrice)}</span>
+                      </div>
+                      <div className="flex justify-between text-gracie-red font-bold">
+                        <span>Processing Fee (We Cover):</span>
+                        <span className="tabular-nums">−${formatPrice(breakdown?.ccFee)}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Processing Fee (We Cover):</span>
-                      <span>-${formatPrice(getBreakdown(selectedTier)?.ccFee)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold text-lg pt-4">
-                      <span>Total Amount Customer Pays:</span>
-                      <span>${formatPrice(selectedTier.totalPrice - getBreakdown(selectedTier)?.ccFee)}</span>
-                    </div>
+                  ) : (
+                    <>
+                      <div className={`border-b-2 ${subtleBorder}`}>
+                        {renderMonthlyBreakdown()}
+                      </div>
+                      {selectedTier.type === 'monthly' && renderEnrollmentSection(selectedTier)}
+                    </>
+                  )}
+                </div>
+
+                <div className="bg-black text-white p-5 mt-4 border-t-4 border-gracie-red">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Total Today</span>
+                    <span className="text-3xl font-black tabular-nums">${formatPrice(totalToday)}</span>
                   </div>
-                ) : (
-                  // Monthly plan breakdown
-                  <>
-                    <div className="border-b border-gray-200 dark:border-gray-700">
-                      {renderMonthlyBreakdown()}
+                  {recurring != null && (
+                    <div className="flex justify-between items-baseline mt-2 pt-2 border-t border-neutral-700">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">Then Monthly</span>
+                      <span className="text-base font-bold tabular-nums text-neutral-200">${formatPrice(recurring)}/mo</span>
                     </div>
-                    
-                    {/* Enrollment Section - Only show for monthly plans */}
-                    {selectedTier.type === 'monthly' && renderEnrollmentSection(selectedTier)}
-                    
-                    <div className={`flex justify-between font-semibold text-lg pt-4 mt-4`}>
-                      <span>Total Amount Customer Pays:</span>
-                      <span>${formatPrice(getBreakdown(selectedTier)?.totalCharge)}</span>
-                    </div>
-                    {/* Add monthly payment line */}
-                    <div className={`flex justify-between text-sm ${mutedText} pt-1`}>
-                      <span>Then:</span>
-                      <span>${formatPrice(getBreakdown(selectedTier)?.adjustedMonthlyPrice)}/mo</span>
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>
