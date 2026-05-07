@@ -1,5 +1,25 @@
 import React from 'react';
 
+const CC_PERCENTAGE = 0.0399;
+
+const TIERS = [
+  // Jiu Jitsu Tiers
+  { name: 'Jiu Jitsu Standard', monthlyPrice: 185, enrollmentFee: 199, hasCCDiscount: true, program: 'jiujitsu', type: 'monthly' },
+  { name: 'Jiu Jitsu Premium', monthlyPrice: 220, enrollmentFee: 0, hasCCDiscount: false, program: 'jiujitsu', type: 'monthly' },
+  { name: 'Jiu Jitsu 6-Month Plan', totalPrice: 997, program: 'jiujitsu', type: 'prepaid', months: 6 },
+  { name: 'Jiu Jitsu 12-Month Plan', totalPrice: 1797, program: 'jiujitsu', type: 'prepaid', months: 12 },
+  // Kickboxing Tiers
+  { name: 'Kickboxing Standard', monthlyPrice: 165, enrollmentFee: 199, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
+  { name: 'Kickboxing Premium', monthlyPrice: 200, enrollmentFee: 0, hasCCDiscount: false, program: 'kickboxing', type: 'monthly' },
+  { name: 'Kickboxing 6-Month Plan', totalPrice: 900, program: 'kickboxing', type: 'prepaid', months: 6 },
+  { name: 'Kickboxing 12-Month Plan', totalPrice: 1500, program: 'kickboxing', type: 'prepaid', months: 12 },
+  // Combined Program Tiers
+  { name: 'Combined Standard', monthlyPrice: 220, enrollmentFee: 199, hasCCDiscount: true, program: 'combined', type: 'monthly' },
+  { name: 'Combined Premium', monthlyPrice: 245, enrollmentFee: 0, hasCCDiscount: false, program: 'combined', type: 'monthly' },
+  { name: 'Combined 6-Month Plan', totalPrice: 1399, program: 'combined', type: 'prepaid', months: 6 },
+  { name: 'Combined 12-Month Plan', totalPrice: 2299, program: 'combined', type: 'prepaid', months: 12 },
+];
+
 function App() {
   const [selectedTier, setSelectedTier] = React.useState(null);
   const [enrollmentDiscount, setEnrollmentDiscount] = React.useState('');
@@ -12,26 +32,6 @@ function App() {
   const [percentageDiscount, setPercentageDiscount] = React.useState('');
   const [showMilitaryDiscount, setShowMilitaryDiscount] = React.useState(false);
   const [showEnrollmentDiscount, setShowEnrollmentDiscount] = React.useState(false);
-
-  const CC_PERCENTAGE = 0.0399;
-
-  const tiers = [
-    // Jiu Jitsu Tiers
-    { name: 'Jiu Jitsu Standard', monthlyPrice: 185, enrollmentFee: 199, hasCCDiscount: true, program: 'jiujitsu', type: 'monthly' },
-    { name: 'Jiu Jitsu Premium', monthlyPrice: 220, enrollmentFee: 0, hasCCDiscount: false, program: 'jiujitsu', type: 'monthly' },
-    { name: 'Jiu Jitsu 6-Month Plan', totalPrice: 997, program: 'jiujitsu', type: 'prepaid', months: 6 },
-    { name: 'Jiu Jitsu 12-Month Plan', totalPrice: 1797, program: 'jiujitsu', type: 'prepaid', months: 12 },
-    // Kickboxing Tiers
-    { name: 'Kickboxing Standard', monthlyPrice: 165, enrollmentFee: 199, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
-    { name: 'Kickboxing Premium', monthlyPrice: 200, enrollmentFee: 0, hasCCDiscount: false, program: 'kickboxing', type: 'monthly' },
-    { name: 'Kickboxing 6-Month Plan', totalPrice: 900, program: 'kickboxing', type: 'prepaid', months: 6 },
-    { name: 'Kickboxing 12-Month Plan', totalPrice: 1500, program: 'kickboxing', type: 'prepaid', months: 12 },
-    // Combined Program Tiers
-    { name: 'Combined Standard', monthlyPrice: 220, enrollmentFee: 199, hasCCDiscount: true, program: 'combined', type: 'monthly' },
-    { name: 'Combined Premium', monthlyPrice: 245, enrollmentFee: 0, hasCCDiscount: false, program: 'combined', type: 'monthly' },
-    { name: 'Combined 6-Month Plan', totalPrice: 1399, program: 'combined', type: 'prepaid', months: 6 },
-    { name: 'Combined 12-Month Plan', totalPrice: 2299, program: 'combined', type: 'prepaid', months: 12 },
-  ];
 
   // Load saved discount only when selecting a monthly plan with enrollment fee
   React.useEffect(() => {
@@ -388,39 +388,39 @@ function App() {
             <select 
               className={`w-full p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
               onChange={(e) => {
-                const newTier = e.target.value === "" ? null : tiers[parseInt(e.target.value)];
+                const newTier = e.target.value === "" ? null : TIERS[parseInt(e.target.value)];
                 setSelectedTier(newTier);
                 if (!newTier || newTier.type === 'prepaid') {
                   setEnrollmentDiscount('');
                 }
               }}
-              value={selectedTier && tiers.indexOf(selectedTier) !== -1 ? tiers.indexOf(selectedTier) : ""}
+              value={selectedTier && TIERS.indexOf(selectedTier) !== -1 ? String(TIERS.indexOf(selectedTier)) : ""}
               style={{WebkitAppearance: 'none'}}
             >
               <option value="">Choose a plan</option>
               <optgroup label="Jiu Jitsu Programs">
-                {tiers
+                {TIERS
                   .filter(tier => tier.program === 'jiujitsu')
                   .map((tier, index) => (
-                    <option key={index} value={tiers.indexOf(tier)}>
+                    <option key={index} value={TIERS.indexOf(tier)}>
                       {formatOptionLabel(tier)}
                     </option>
                   ))}
               </optgroup>
               <optgroup label="Kickboxing Programs">
-                {tiers
+                {TIERS
                   .filter(tier => tier.program === 'kickboxing')
                   .map((tier, index) => (
-                    <option key={index} value={tiers.indexOf(tier)}>
+                    <option key={index} value={TIERS.indexOf(tier)}>
                       {formatOptionLabel(tier)}
                     </option>
                   ))}
               </optgroup>
               <optgroup label="Combined Programs (Jiu Jitsu + Kickboxing)">
-                {tiers
+                {TIERS
                   .filter(tier => tier.program === 'combined')
                   .map((tier, index) => (
-                    <option key={index} value={tiers.indexOf(tier)}>
+                    <option key={index} value={TIERS.indexOf(tier)}>
                       {formatOptionLabel(tier)}
                     </option>
                   ))}
