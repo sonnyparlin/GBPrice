@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "agent",
+            "if": "Bash(git commit *)",
+            "statusMessage": "Reviewing gb-price-calculator skill doc against new commit",
+            "timeout": 180,
+            "prompt": "A git commit just landed in the GBPrice repo (commit was triggered by the parent Claude session). Hook input JSON: $ARGUMENTS\n\nYour job: review the new commit and update ~/.claude/skills/gb-price-calculator/SKILL.md ONLY if the commit invalidated a factual claim in the doc. Be conservative. When in doubt, do nothing.\n\nSteps:\n1. Identify the new commit. The cwd may be the main repo (/Users/sonnyparlin/Desktop/GBPrice) or a worktree under .claude/worktrees/. Both work for git commands. Run:\n   - `git log -1 --format='%H%n%s%n%b'` to see hash, subject, body\n   - `git show HEAD --stat` to see which files changed\n   - `git show HEAD` to see the full diff (skip if huge — use --stat plus per-file `git show HEAD -- <path>` instead)\n2. If the only files touched are README.md, CLAUDE.md, .gitignore, package-lock.json, .vscode/, dist/, or other non-source artifacts — STOP. The skill doc rarely needs updates for these. Exit without editing.\n3. Otherwise, read ~/.claude/skills/gb-price-calculator/SKILL.md in full.\n4. Cross-check the diff against these claim categories in the doc:\n   - Line number references (e.g. 'App.jsx:7', 'App.jsx:131', 'App.jsx:46', 'App.jsx:430', 'App.jsx:88', 'App.jsx:67') — if the referenced code moved, update the line number.\n   - The TIERS array description (15 entries, 3 programs × 5 tiers) and the FAMILY_RATES values ({ jiujitsu: 400, kickboxing: 400, combined: 450 }) — update if prices changed.\n   - The CC_PERCENTAGE constant value (0.0399).\n   - Business rules in the 'Things that are easy to get wrong' section.\n   - File paths and repo URL.\n   - The list of tier shapes (monthly / family / prepaid) and their fields.\n5. For each genuine staleness, use Edit on SKILL.md to fix ONLY that claim. Preserve the doc's voice and structure. Do NOT rewrite sections that are still accurate. Do NOT add new gotchas or sections unless the commit introduces something materially new (a new feature, a new business rule).\n6. After editing (or deciding not to edit), output ONE LINE summarizing what you did, e.g.:\n   - 'No update needed — commit only touched README.'\n   - 'Updated App.jsx:131 → App.jsx:138 reference (useEffect moved).'\n   - 'Updated jiujitsu family rate 400 → 425 in TIERS description and FAMILY_RATES note.'\n\nHard rules:\n- Do NOT run npm/build/test commands.\n- Do NOT make new git commits or modify the repo.\n- Do NOT touch any file other than ~/.claude/skills/gb-price-calculator/SKILL.md.\n- If unsure whether a claim is stale, leave it alone — README/code drift between commits is the expected pattern per the doc itself."
+          }
+        ]
+      }
+    ]
+  }
+}
