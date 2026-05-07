@@ -23,4 +23,7 @@ This price calculator for Gracie Bradenton helps us quickly figure out a custome
 - Jiu Jitsu 6-month up front 1399
 - Jiu Jitsu 12-month up front 2299
 
-## Family rate: 400
+## Family rates (3+ people):
+- Jiu Jitsu only: 400
+- Kickboxing only: 400
+- Jiu Jitsu + Kickboxing (Combined): 450

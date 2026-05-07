@@ -10,7 +10,6 @@ function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [percentageDiscount, setPercentageDiscount] = React.useState('');
-  const [discountTarget, setDiscountTarget] = React.useState('membership');
   const [showMilitaryDiscount, setShowMilitaryDiscount] = React.useState(false);
   const [showEnrollmentDiscount, setShowEnrollmentDiscount] = React.useState(false);
 
@@ -74,22 +73,21 @@ function App() {
     }
   };
 
-  const calculatePercentageDiscount = (amount, target) => {
-    if (!percentageDiscount || discountTarget !== target) return 0;
+  const calculatePercentageDiscount = (amount) => {
+    if (!percentageDiscount) return 0;
     return (Number(percentageDiscount) / 100) * amount;
   };
 
   const getDiscountedEnrollmentFee = (tier) => {
     if (!tier) return 0;
-    
+
     // No enrollment fee for family plans (3+ people)
     if (numberOfPeople >= 3) return 0;
-    
+
     const originalFee = tier.enrollmentFee;
     const flatDiscount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
-    const percentDiscount = calculatePercentageDiscount(originalFee, 'enrollment');
-    
-    return Math.max(0, originalFee - flatDiscount - percentDiscount);
+
+    return Math.max(0, originalFee - flatDiscount);
   };
 
   const calculateEnrollmentChargeAmount = (enrollmentAmount, hasCCDiscount) => {
@@ -109,7 +107,7 @@ function App() {
       if (tier.program === 'jiujitsu') {
         return 400;  // Jiu Jitsu Family Plan
       } else if (tier.program === 'combined') {
-        return 470;  // Combined Family Plan
+        return 450;  // Combined (Jiu Jitsu + Kickboxing) Family Plan
       } else if (tier.program === 'kickboxing') {
         return 400;  // Kickboxing Family Plan
       }
@@ -152,7 +150,7 @@ function App() {
     const adjustedMonthlyPrice = getAdjustedMonthlyPrice(tier);
     const isFamilyPlan = numberOfPeople >= 3 && (tier.program === 'jiujitsu' || tier.program === 'combined' || tier.program === 'kickboxing');
     const baseAmount = adjustedMonthlyPrice * (isFamilyPlan ? 1 : numberOfPeople);
-    const membershipDiscount = calculatePercentageDiscount(baseAmount, 'membership');
+    const membershipDiscount = calculatePercentageDiscount(baseAmount);
     const discountedAmount = baseAmount - membershipDiscount;
     
     const proratedAmount = calculateProratedAmount(discountedAmount);
@@ -234,7 +232,9 @@ function App() {
           checked={showEnrollmentDiscount}
           onChange={(e) => {
             setShowEnrollmentDiscount(e.target.checked);
-            if (!e.target.checked) {
+            if (e.target.checked) {
+              setEnrollmentDiscount(String(selectedTier?.enrollmentFee ?? ''));
+            } else {
               setEnrollmentDiscount('');
             }
           }}
@@ -253,13 +253,7 @@ function App() {
           checked={showMilitaryDiscount}
           onChange={(e) => {
             setShowMilitaryDiscount(e.target.checked);
-            if (e.target.checked) {
-              setPercentageDiscount('20');  // Set to 20% when checked
-              setDiscountTarget('enrollment');  // Default to enrollment fee
-            } else {
-              setPercentageDiscount('');
-              setDiscountTarget('enrollment');
-            }
+            setPercentageDiscount(e.target.checked ? '20' : '');
           }}
           className="mr-2"
         />
@@ -271,43 +265,20 @@ function App() {
   const renderPercentageDiscountInput = () => (
     <div className="mb-6">
       <label className="block text-sm font-medium mb-2">Military Discount Percentage</label>
-      <div className="space-y-2">
-        <div className="flex items-center space-x-4">
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            max="100"
-            value={percentageDiscount}
-            onChange={(e) => setPercentageDiscount(e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value))))}
-            className={`w-24 p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
-            placeholder="20"
-          />
-          <span>%</span>
-        </div>
-        <div className="flex space-x-4">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="enrollment"
-              checked={discountTarget === 'enrollment'}
-              onChange={(e) => setDiscountTarget(e.target.value)}
-              className="mr-2"
-            />
-            Apply to Enrollment Fee
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="membership"
-              checked={discountTarget === 'membership'}
-              onChange={(e) => setDiscountTarget(e.target.value)}
-              className="mr-2"
-            />
-            Apply to Membership Fee
-          </label>
-        </div>
+      <div className="flex items-center space-x-4">
+        <input
+          type="number"
+          inputMode="decimal"
+          min="0"
+          max="100"
+          value={percentageDiscount}
+          onChange={(e) => setPercentageDiscount(e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value))))}
+          className={`w-24 p-3 border rounded-lg ${borderColor} ${cardBg} ${textColor}`}
+          placeholder="20"
+        />
+        <span>%</span>
       </div>
+      <p className={`text-xs mt-2 ${mutedText}`}>Applied to the membership fee.</p>
     </div>
   );
 
@@ -340,9 +311,9 @@ function App() {
           <span>{daysLeft} days</span>
         </div>
         
-        {discountTarget === 'membership' && percentageDiscount && (
+        {percentageDiscount && (
           <div className="flex justify-between text-red-500">
-            <span>Percentage Discount ({percentageDiscount}%):</span>
+            <span>Military Discount ({percentageDiscount}%):</span>
             <span>-${formatPrice(breakdown?.membershipDiscount)}</span>
           </div>
         )}
@@ -384,14 +355,7 @@ function App() {
           <span>Enrollment Fee Discount:</span>
           <span>-${formatPrice(enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount))}</span>
         </div>
-        
-        {discountTarget === 'enrollment' && percentageDiscount && (
-          <div className="flex justify-between text-red-500">
-            <span>Percentage Discount ({percentageDiscount}%):</span>
-            <span>-${formatPrice(calculatePercentageDiscount(originalEnrollmentFee, 'enrollment'))}</span>
-          </div>
-        )}
-        
+
         <div className="flex justify-between">
           <span>Final Enrollment Fee:</span>
           <span>${formatPrice(breakdown?.finalEnrollmentFee)}</span>
