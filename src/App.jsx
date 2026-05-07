@@ -2,6 +2,7 @@ import React from 'react';
 
 const CC_PERCENTAGE = 0.0399;
 
+// Keep in sync with the Family Plan entries in TIERS below — both are read at runtime.
 const FAMILY_RATES = { jiujitsu: 400, kickboxing: 400, combined: 450 };
 
 const TIERS = [
