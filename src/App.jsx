@@ -202,7 +202,7 @@ function App() {
       <div className="flex items-center">
         <button
           onClick={() => setNumberOfPeople(prev => Math.max(1, prev - 1))}
-          className={`px-5 py-3 border-2 ${borderColor} ${inputBg} ${textColor} font-black text-lg hover:bg-gracie-red hover:text-white hover:border-gracie-red transition-colors`}
+          className={`w-9 h-9 flex items-center justify-center border-2 ${borderColor} ${inputBg} ${textColor} font-black text-base hover:bg-gracie-red hover:text-white hover:border-gracie-red transition-colors`}
           type="button"
         >
           −
@@ -214,12 +214,12 @@ function App() {
           min="1"
           value={numberOfPeople}
           onChange={(e) => setNumberOfPeople(Math.max(1, parseInt(e.target.value) || 1))}
-          className={`w-20 p-3 border-y-2 border-x-0 text-center font-bold ${borderColor} ${inputBg} ${textColor} focus:outline-none`}
+          className={`w-12 h-9 border-y-2 border-x-0 text-center font-bold text-sm ${borderColor} ${inputBg} ${textColor} focus:outline-none`}
           style={{ appearance: 'textfield' }}
         />
         <button
           onClick={() => setNumberOfPeople(prev => prev + 1)}
-          className={`px-5 py-3 border-2 ${borderColor} ${inputBg} ${textColor} font-black text-lg hover:bg-gracie-red hover:text-white hover:border-gracie-red transition-colors`}
+          className={`w-9 h-9 flex items-center justify-center border-2 ${borderColor} ${inputBg} ${textColor} font-black text-base hover:bg-gracie-red hover:text-white hover:border-gracie-red transition-colors`}
           type="button"
         >
           +
@@ -389,8 +389,9 @@ function App() {
     <div className={`min-h-screen ${bgColor} py-8 ${textColor} font-sans`}>
       <div className="max-w-2xl mx-auto px-4">
         <div className={`${cardBg} border-2 ${borderColor} p-6 sm:p-8`}>
-          <div className="text-center mb-8">
-            <div className="inline-block w-12 h-1 bg-gracie-red mb-3"></div>
+          <div className="flex flex-col items-center text-center mb-8">
+            <img src="/logo.png" alt="Gracie Jiu-Jitsu Bradenton" className="h-14 w-auto mb-3" />
+            <div className="w-12 h-1 bg-gracie-red mb-3"></div>
             <h1 className="text-3xl font-black uppercase tracking-tight">Pricing Calculator</h1>
             <p className={`text-[11px] font-bold uppercase tracking-[0.2em] mt-2 ${mutedText}`}>Gracie Jiu-Jitsu Bradenton</p>
           </div>
