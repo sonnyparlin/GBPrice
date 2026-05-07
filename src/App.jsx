@@ -2,20 +2,25 @@ import React from 'react';
 
 const CC_PERCENTAGE = 0.0399;
 
+const FAMILY_RATES = { jiujitsu: 400, kickboxing: 400, combined: 450 };
+
 const TIERS = [
   // Jiu Jitsu Tiers
   { name: 'Jiu Jitsu Standard', monthlyPrice: 185, enrollmentFee: 199, hasCCDiscount: true, program: 'jiujitsu', type: 'monthly' },
   { name: 'Jiu Jitsu Premium', monthlyPrice: 220, enrollmentFee: 0, hasCCDiscount: false, program: 'jiujitsu', type: 'monthly' },
+  { name: 'Jiu Jitsu Family Plan', monthlyPrice: 400, enrollmentFee: 0, hasCCDiscount: false, program: 'jiujitsu', type: 'family' },
   { name: 'Jiu Jitsu 6-Month Plan', totalPrice: 997, program: 'jiujitsu', type: 'prepaid', months: 6 },
   { name: 'Jiu Jitsu 12-Month Plan', totalPrice: 1797, program: 'jiujitsu', type: 'prepaid', months: 12 },
   // Kickboxing Tiers
   { name: 'Kickboxing Standard', monthlyPrice: 165, enrollmentFee: 199, hasCCDiscount: true, program: 'kickboxing', type: 'monthly' },
   { name: 'Kickboxing Premium', monthlyPrice: 200, enrollmentFee: 0, hasCCDiscount: false, program: 'kickboxing', type: 'monthly' },
+  { name: 'Kickboxing Family Plan', monthlyPrice: 400, enrollmentFee: 0, hasCCDiscount: false, program: 'kickboxing', type: 'family' },
   { name: 'Kickboxing 6-Month Plan', totalPrice: 900, program: 'kickboxing', type: 'prepaid', months: 6 },
   { name: 'Kickboxing 12-Month Plan', totalPrice: 1500, program: 'kickboxing', type: 'prepaid', months: 12 },
   // Combined Program Tiers
   { name: 'Combined Standard', monthlyPrice: 220, enrollmentFee: 199, hasCCDiscount: true, program: 'combined', type: 'monthly' },
   { name: 'Combined Premium', monthlyPrice: 245, enrollmentFee: 0, hasCCDiscount: false, program: 'combined', type: 'monthly' },
+  { name: 'Combined Family Plan', monthlyPrice: 450, enrollmentFee: 0, hasCCDiscount: false, program: 'combined', type: 'family' },
   { name: 'Combined 6-Month Plan', totalPrice: 1399, program: 'combined', type: 'prepaid', months: 6 },
   { name: 'Combined 12-Month Plan', totalPrice: 2299, program: 'combined', type: 'prepaid', months: 12 },
 ];
@@ -78,11 +83,25 @@ function App() {
     return (Number(percentageDiscount) / 100) * amount;
   };
 
-  const getDiscountedEnrollmentFee = (tier) => {
-    if (!tier) return 0;
+  // Family mode is either the explicit Family Plan tier OR a monthly tier with 3+ people.
+  // Prepaid plans use their own multi-person logic (1st person full + 20% off each additional).
+  const isFamilyMode = (tier) => {
+    if (!tier) return false;
+    if (tier.type === 'family') return true;
+    return tier.type === 'monthly' && numberOfPeople >= 3 && FAMILY_RATES[tier.program] != null;
+  };
 
-    // No enrollment fee for family plans (3+ people)
-    if (numberOfPeople >= 3) return 0;
+  const getEffectiveMonthlyPrice = (tier) => {
+    if (!tier) return 0;
+    if (tier.type === 'family') return tier.monthlyPrice;
+    if (isFamilyMode(tier)) return FAMILY_RATES[tier.program];
+    return tier.monthlyPrice;
+  };
+
+  const getDiscountedEnrollmentFee = (tier) => {
+    if (!tier || !tier.enrollmentFee) return 0;
+    // Family mode (explicit or implicit) waives the enrollment fee
+    if (isFamilyMode(tier)) return 0;
 
     const originalFee = tier.enrollmentFee;
     const flatDiscount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
@@ -99,30 +118,9 @@ function App() {
     return amount * CC_PERCENTAGE;
   };
 
-  const getAdjustedMonthlyPrice = (tier) => {
-    if (!tier || tier.type === 'prepaid') return tier?.monthlyPrice || 0;
-    
-    // For 3 or more people (Family Plan)
-    if (numberOfPeople >= 3) {
-      if (tier.program === 'jiujitsu') {
-        return 400;  // Jiu Jitsu Family Plan
-      } else if (tier.program === 'combined') {
-        return 450;  // Combined (Jiu Jitsu + Kickboxing) Family Plan
-      } else if (tier.program === 'kickboxing') {
-        return 400;  // Kickboxing Family Plan
-      }
-    }
-    
-    return tier.monthlyPrice;
-  };
-
   const formatOptionLabel = (tier) => {
-    if (tier.type === 'monthly') {
-      const price = numberOfPeople >= 3 ? getAdjustedMonthlyPrice(tier) : tier.monthlyPrice;
-      const label = numberOfPeople >= 3 && (tier.program === 'jiujitsu' || tier.program === 'combined') 
-        ? `${tier.name} (Family Plan)` 
-        : tier.name;
-      return `${label} - $${price}/month`;
+    if (tier.type === 'monthly' || tier.type === 'family') {
+      return `${tier.name} - $${tier.monthlyPrice}/month`;
     } else {
       const actualCharge = tier.totalPrice / (1 - CC_PERCENTAGE);
       const ccFee = actualCharge - tier.totalPrice;
@@ -130,26 +128,45 @@ function App() {
     }
   };
 
+  // Auto-swap to the explicit Family Plan tier when N>=3 on a monthly tier.
+  // The dropdown selection visibly switches; the user can pick a monthly tier again
+  // to start over (we reset N to 1 in the select onChange so it doesn't immediately re-swap).
+  React.useEffect(() => {
+    if (selectedTier?.type === 'monthly' && numberOfPeople >= 3 && FAMILY_RATES[selectedTier.program] != null) {
+      const familyTier = TIERS.find(t => t.type === 'family' && t.program === selectedTier.program);
+      if (familyTier) setSelectedTier(familyTier);
+    }
+  }, [selectedTier, numberOfPeople]);
+
   const getBreakdown = (tier) => {
     if (!tier) return null;
 
     if (tier.type === 'prepaid') {
-      const actualCharge = tier.totalPrice / (1 - CC_PERCENTAGE);
-      const ccFee = actualCharge - tier.totalPrice;
+      const pricePerAdditional = tier.totalPrice * 0.8;
+      const additionalPeople = Math.max(0, numberOfPeople - 1);
+      const baseTotal = tier.totalPrice + pricePerAdditional * additionalPeople;
+      const actualCharge = baseTotal / (1 - CC_PERCENTAGE);
+      const ccFee = actualCharge - baseTotal;
       return {
         isPrepaid: true,
         months: tier.months,
-        customerPays: tier.totalPrice,
-        actualCharge: actualCharge,
-        ccFee: ccFee,
-        effectiveMonthly: tier.totalPrice / tier.months,
-        totalCharge: tier.totalPrice
+        firstPersonPrice: tier.totalPrice,
+        pricePerAdditional,
+        additionalPeople,
+        additionalTotal: pricePerAdditional * additionalPeople,
+        baseTotal,
+        customerPays: baseTotal,
+        gymReceives: baseTotal - ccFee,
+        actualCharge,
+        ccFee,
+        effectiveMonthly: baseTotal / tier.months,
+        totalCharge: baseTotal,
       };
     }
 
-    const adjustedMonthlyPrice = getAdjustedMonthlyPrice(tier);
-    const isFamilyPlan = numberOfPeople >= 3 && (tier.program === 'jiujitsu' || tier.program === 'combined' || tier.program === 'kickboxing');
-    const baseAmount = adjustedMonthlyPrice * (isFamilyPlan ? 1 : numberOfPeople);
+    const isFamilyPlan = isFamilyMode(tier);
+    const adjustedMonthlyPrice = getEffectiveMonthlyPrice(tier);
+    const baseAmount = isFamilyPlan ? adjustedMonthlyPrice : adjustedMonthlyPrice * numberOfPeople;
     const membershipDiscount = calculatePercentageDiscount(baseAmount);
     const discountedAmount = baseAmount - membershipDiscount;
     
@@ -288,21 +305,27 @@ function App() {
 
   const renderMonthlyBreakdown = () => {
     const breakdown = getBreakdown(selectedTier);
-    const isFamilyPlan = numberOfPeople >= 3 && (selectedTier.program === 'jiujitsu' || selectedTier.program === 'combined' || selectedTier.program === 'kickboxing');
+    const isFamilyPlan = isFamilyMode(selectedTier);
 
     return (
       <div className="pb-4 space-y-1.5">
         <div className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedText} pb-2`}>Membership Charges</div>
         <div className="flex justify-between">
-          <span>Monthly Price {isFamilyPlan ? '(Family Plan Total)' : 'per Person'}:</span>
-          <span className="font-semibold tabular-nums">${formatPrice(breakdown?.adjustedMonthlyPrice)}</span>
+          <span>Monthly Price {isFamilyPlan ? '(Family Total)' : 'per Person'}:</span>
+          <span className="font-semibold tabular-nums">${formatPrice(isFamilyPlan ? getEffectiveMonthlyPrice(selectedTier) : selectedTier.monthlyPrice)}</span>
         </div>
 
-        {!isFamilyPlan && (
-          <div className="flex justify-between">
-            <span>Number of People:</span>
-            <span className="font-semibold tabular-nums">×{numberOfPeople}</span>
-          </div>
+        {!isFamilyPlan && numberOfPeople > 1 && (
+          <>
+            <div className="flex justify-between">
+              <span>Number of People:</span>
+              <span className="font-semibold tabular-nums">×{numberOfPeople}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Monthly Subtotal:</span>
+              <span className="font-semibold tabular-nums">${formatPrice(breakdown?.adjustedMonthlyPrice)}</span>
+            </div>
+          </>
         )}
 
         <div className="flex justify-between">
@@ -323,7 +346,7 @@ function App() {
         )}
 
         <div className="flex justify-between">
-          <span>Prorated Amount {isFamilyPlan ? '(Family Total)' : '(All People)'}:</span>
+          <span>Prorated Amount{!isFamilyPlan && numberOfPeople > 1 ? ' (All People)' : ''}:</span>
           <span className="font-semibold tabular-nums">${formatPrice(breakdown?.proratedAmount)}</span>
         </div>
 
@@ -344,8 +367,8 @@ function App() {
     const breakdown = getBreakdown(tier);
     const originalEnrollmentFee = tier.enrollmentFee;
 
-    // Don't show enrollment section for family plans
-    if (numberOfPeople >= 3) return null;
+    // Don't show enrollment section if there's no enrollment fee or family mode waives it
+    if (!originalEnrollmentFee || isFamilyMode(tier)) return null;
 
     const flatDiscount = enrollmentDiscount === '' ? 0 : Number(enrollmentDiscount);
 
@@ -406,6 +429,9 @@ function App() {
                 if (!newTier || newTier.type === 'prepaid') {
                   setEnrollmentDiscount('');
                 }
+                if (newTier?.type === 'monthly') {
+                  setNumberOfPeople(1);
+                }
               }}
               value={selectedTier && TIERS.indexOf(selectedTier) !== -1 ? String(TIERS.indexOf(selectedTier)) : ""}
               style={{WebkitAppearance: 'none'}}
@@ -452,12 +478,12 @@ function App() {
             </div>
           )}
 
-          {selectedTier && renderPeopleInput()}
+          {selectedTier && selectedTier.type !== 'family' && renderPeopleInput()}
 
-          {selectedTier?.type === 'monthly' && (
+          {(selectedTier?.type === 'monthly' || selectedTier?.type === 'family') && (
             <>
-              {selectedTier?.enrollmentFee > 0 && numberOfPeople < 3 && renderEnrollmentDiscountCheckbox()}
-              {showEnrollmentDiscount && selectedTier?.enrollmentFee > 0 && numberOfPeople < 3 && (
+              {selectedTier?.enrollmentFee > 0 && !isFamilyMode(selectedTier) && renderEnrollmentDiscountCheckbox()}
+              {showEnrollmentDiscount && selectedTier?.enrollmentFee > 0 && !isFamilyMode(selectedTier) && (
                 <div className="mb-6">
                   <label className={labelClass}>Enrollment Fee Discount ($)</label>
                   <input
@@ -480,9 +506,9 @@ function App() {
           {selectedTier && (() => {
             const breakdown = getBreakdown(selectedTier);
             const totalToday = selectedTier.type === 'prepaid'
-              ? selectedTier.totalPrice - breakdown?.ccFee
+              ? breakdown?.customerPays
               : breakdown?.totalCharge;
-            const recurring = selectedTier.type === 'monthly' ? breakdown?.adjustedMonthlyPrice : null;
+            const recurring = selectedTier.type !== 'prepaid' ? breakdown?.adjustedMonthlyPrice : null;
             return (
               <div className="mt-8">
                 <div className="flex items-center mb-4">
@@ -494,20 +520,23 @@ function App() {
                     <div className="space-y-1.5">
                       <div className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedText} pb-2`}>{selectedTier.months}-Month Prepaid Plan</div>
                       <div className="flex justify-between">
-                        <span>Program Price (before processing fee):</span>
+                        <span>Program Price{numberOfPeople > 1 ? ' (1st Person)' : ''}:</span>
                         <span className="font-semibold tabular-nums">${formatPrice(selectedTier.totalPrice)}</span>
                       </div>
-                      <div className="flex justify-between text-gracie-red font-bold">
-                        <span>Processing Fee (We Cover):</span>
-                        <span className="tabular-nums">−${formatPrice(breakdown?.ccFee)}</span>
-                      </div>
+                      {numberOfPeople > 1 && (
+                        <div className="flex justify-between">
+                          <span>Additional Members (×{breakdown?.additionalPeople} @ 20% off):</span>
+                          <span className="font-semibold tabular-nums">+${formatPrice(breakdown?.additionalTotal)}</span>
+                        </div>
+                      )}
+                      <p className={`text-[11px] uppercase tracking-widest pt-2 ${mutedText}`}>We cover ${formatPrice(breakdown?.ccFee)} in CC processing fees.</p>
                     </div>
                   ) : (
                     <>
                       <div className={`border-b-2 ${subtleBorder}`}>
                         {renderMonthlyBreakdown()}
                       </div>
-                      {selectedTier.type === 'monthly' && renderEnrollmentSection(selectedTier)}
+                      {renderEnrollmentSection(selectedTier)}
                     </>
                   )}
                 </div>
