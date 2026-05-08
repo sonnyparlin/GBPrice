@@ -7,6 +7,7 @@
         "hooks": [
           {
             "type": "agent",
+            "model": "claude-sonnet-4-7",
             "if": "Bash(git push *)",
             "statusMessage": "Reviewing gb-price-calculator skill doc against pushed commits",
             "timeout": 180,
